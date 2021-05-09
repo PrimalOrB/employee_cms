@@ -24,21 +24,24 @@ VALUES ("Sales Lead", 100000, 1),
 ("CTO", 300000, 7),
 ("GM", 300000, 7);
 
+
+
 INSERT INTO employees ( first_name, last_name, role_id, manager_id )
-VALUES ( "John", "Doe", 1, 17),
-( "Billy", "Joel", 2, 1),
-( "Muhammad", "Ali", 3, 16),
-( "George", "Dubya", 4, 3),
-( "Derek", "Zoolander", 4, 3),
-( "Hansel", "Gretel", 5, 3),
-( "Zooey", "Doodle", 6, 14),
-( "Ronald", "Weasley", 7, 7),
-( "Ginny", "Weasley", 7, 7),
-( "John", "Wick", 8, 13),
-( "Barry", "Allen", 9, 17),
-( "Tony", "Stark", 10, 17),
-( "Tom", "Holland", 11, 12),
-( "Austin", "Powers", 12, null),
-( "Tyler", "Bigglesworth", 13, 14),
-( "Foxy", "Cleopatra", 14, 14),
-( "Jonny", "Nonny", 15, 14);
+VALUES 
+( "Austin",     "Powers",       12, null    ), 
+( "Tyler",      "Bigglesworth", 13, 1       ), 
+( "Foxy",       "Cleopatra",    14, 1       ), 
+( "Jonny",      "Nonny",        15, 1       ),
+( "John",       "Doe",          1,  4       ), 
+( "Billy",      "Joel",         2,  5       ), 
+( "Muhammad",   "Ali",          3,  3       ), 
+( "George",     "Dubya",        4,  7       ),  
+( "Derek",      "Zoolander",    4,  7       ),  
+( "Hansel",     "Gretel",       5,  7       ),  
+( "Zooey",      "Doodle",       6,  3       ),
+( "Ronald",     "Weasley",      7,  11      ), 
+( "Ginny",      "Weasley",      7,  11      ), 
+( "John",       "Wick",         8,  2       ), 
+( "Barry",      "Allen",        9,  4       ), 
+( "Tony",       "Stark",        10, 4       ), 
+( "Tom",        "Holland",      11, 16      );
