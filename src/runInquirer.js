@@ -40,6 +40,12 @@ function initial() {
         case "Add a role":
             addRole();
             break;
+        case "Add an employee":
+            addEmployee();
+            break;
+        case "Update and employee role":
+            updateEmployeeRole();
+            break;
         }
     })
 };
@@ -156,7 +162,7 @@ ${rows.affectedRows} department added
 
     // add new role
 function addRole() {
-    const roles = []
+    const departments = []
         // collect department names from database for choices in inquirer prompt
     db.promise().query(`SELECT name,id FROM departments;`)
         .then( ([rows,fields]) => {
@@ -165,7 +171,7 @@ function addRole() {
             // push choices into array
         rows.forEach( entry => choices.push( Object.values(entry)[0] ))
             // push results into array to search for ID after selection
-        rows.forEach( entry => roles.push( {id: Object.values(entry)[1], department: Object.values(entry)[0] } ) )
+        rows.forEach( entry => departments.push( {id: Object.values(entry)[1], department: Object.values(entry)[0] } ) )
             // return to menu
          return inquirer.prompt( [
                 {
@@ -212,7 +218,7 @@ function addRole() {
         })
         .then( data => {
                 // collect ID of department by
-            const departmentID = roles.filter( x => x.department === data.department)
+            const departmentID = departments.filter( x => x.department === data.department)
             db.promise().query(`INSERT INTO roles ( title, salary, department_id ) VALUES ( ?, ?, ? )`, [ data.role, data.salary, departmentID[0].id ])
            .then( ([rows,fields]) => {
                     // display confirmation
@@ -229,6 +235,113 @@ ${rows.affectedRows} role added
         .catch( err => {
             console.log( err );
         } );
+};
+
+    // add new employee
+function addEmployee() {
+        // create empty array to store roles
+    const roles = []
+        // create array to store employees with a default 'None'
+    const employees = [{id: null, name: 'None'}]
+        // collect employeed list for selecting manager
+    db.promise().query(`SELECT concat(first_name,' ',last_name) AS name,id FROM employees;`)
+        .then( ([rows,fields]) => {
+                // create array with default 'None'
+            const managerList = ['None']
+                // push choices into array
+            rows.forEach( entry => managerList.push( Object.values(entry)[0] ))
+                // populate list for manager selection
+            rows.forEach( entry => employees.push( {id: Object.values(entry)[1], name: Object.values(entry)[0] } ) )
+                // collect roles for selection in the inquirer prompts
+            db.promise().query(`SELECT title,id FROM roles;`)
+                .then( ([rows,fields]) => {
+                        // create empty array
+                    const roleList = []   
+                        // push choices into array
+                    rows.forEach( entry => roleList.push( Object.values(entry)[0] ))
+                        // push results into array to search for ID after selection
+                    rows.forEach( entry => roles.push( {id: Object.values(entry)[1], title: Object.values(entry)[0] } ) )
+                        // return to menu
+                        return inquirer.prompt( [
+                            {
+                                type: 'text',
+                                name: "first_name",
+                                message: "Enter first name",
+                                validate: input => { // validate that an input has been entered
+                                    if( input ) {
+                                        return true
+                                    } else {
+                                        console.log( 'Enter a role name' )
+                                        return false
+                                    }
+                                }
+                            },
+                            {
+                                type: 'text',
+                                name: "last_name",
+                                message: "Enter last name",
+                                validate: input => { // validate that an input has been entered
+                                    if( input ) {
+                                        return true
+                                    } else {
+                                        console.log( 'Enter a role name' )
+                                        return false
+                                    }
+                                }
+                            },
+                            {
+                                type: 'list',
+                                name: 'title',
+                                message: "Select a role",
+                                choices: roleList,
+                                validate: input => {
+                                    if( input.length === 1 ) { // check for length of 1 to validate single selection
+                                        return true
+                                    } else {
+                                        console.log( 'Select a role!' )
+                                        return false
+                                    }
+                                }
+                            },
+                            {
+                                type: 'list',
+                                name: 'manager',
+                                message: "Does the employee have a manager?",
+                                choices: managerList,
+                                validate: input => {
+                                    if( input.length === 1 ) { // check for length of 1 to validate single selection
+                                        return true
+                                    } else {
+                                        console.log( 'Select a manager!' )
+                                        return false
+                                    }
+                                }
+                            }
+                        ] )
+                    })
+                    .then( data => {
+                            // collect role match
+                        const roleID = roles.filter( x => x.title === data.title)
+                            // collect employee match from manager selection
+                        const managerId = employees.filter( x => x.name === data.manager)
+                        console.log( data, roleID[0].id, managerId[0].id)
+                        db.promise().query(`INSERT INTO employees ( first_name, last_name, role_id, manager_id ) VALUES ( ?, ?, ?, ? )`, [ data.first_name, data.last_name,  roleID[0].id, managerId[0].id ])
+                            .then( ([rows,fields]) => {
+                                    // display confirmation
+                                console.log( `------------------
+${rows.affectedRows} role added
+------------------` )
+                                    // return to menu
+                                initial();
+                            })
+                            .catch( err => {
+                                console.log( err );
+                            } );
+                        })
+                        .catch( err => {
+                            console.log( err );
+                        } );
+        })
 };
 
 module.exports = initial;
