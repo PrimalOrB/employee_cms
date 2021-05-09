@@ -23,7 +23,10 @@ function initial() {
                 "Update an employee manager",
                 "View employees by manager",
                 "View employees by department",
-                "View departmental salary budget"
+                "View departmental salary budget",
+                "Delete a department",
+                "Delete a role",
+                "Delete an employee"
             ]
         }
     ] ).then( data => {
@@ -62,6 +65,15 @@ function initial() {
             case "View departmental salary budget":
                 viewDepartmentBudget();
                 break;
+            case "Delete a department":
+                deleteDepartment();
+                break;
+            case "Delete a role":
+                deleteRole();
+                break;
+            case "Delete an employee":
+                deleteEmployee();
+                break;
             }
     } )
 };
@@ -93,6 +105,7 @@ function viewRoles() {
     db.promise().query(`SELECT roles.id, 
                         roles.title AS role_title,
                         departments.name AS department,
+                        CONCAT('$',FORMAT(roles.salary, 'c')) AS salary,
                     COUNT(employees.id) AS employee_count 
                     FROM roles
                     LEFT JOIN departments
@@ -665,6 +678,147 @@ db.promise().query(`SELECT departments.name AS department,
         console.log( err );
     } );
 };
+
+    // delete a department
+function deleteDepartment() {
+    // create empty array
+    const departments = []
+    // collect employeed list for selecting manager
+    db.promise().query(`SELECT * FROM departments;`)
+        .then( ([rows,fields]) => {
+                // create empty array
+            const departmentList = []    
+                // push choices into department list
+            rows.forEach( entry => departmentList.push( Object.values(entry)[1] ))
+            rows.forEach( entry => departments.push( { id: Object.values(entry)[0], name: Object.values(entry)[1] } ) )
+                // collect roles for selection in the inquirer prompts
+                    return inquirer.prompt( [
+                        {
+                            type: 'list',
+                            name: 'department',
+                            message: "Select department to delete",
+                            choices: departmentList,
+                            validate: input => {
+                                if( input.length === 1 ) { // check for length of 1 to validate single selection
+                                    return true
+                                } else {
+                                    console.log( 'Select a department!' )
+                                    return false
+                                }
+                            }
+                        }
+                    ] )
+                })
+                .then( data => {
+                        // collect department match
+                    const departmentId = departments.filter( x => x.name === data.department)
+                        // query string
+                    db.promise().query(`DELETE FROM departments WHERE id = ?;`, [ departmentId[0].id ])
+                    .then( ([rows,fields]) => {
+                            // display in table
+                        console.log( `${rows.affectedRows} department deleted` )
+                            // return to menu
+                        initial();
+                    })
+            .catch( err => {
+                console.log( err );
+            } );
+        })
+}
+
+    // delete a role
+function deleteRole() {
+        // create empty array
+    const roles = []
+        // collect employeed list for selecting manager
+    db.promise().query(`SELECT * FROM roles;`)
+        .then( ([rows,fields]) => {
+                // create empty array
+            const roleList = []    
+                // push choices into department list
+            rows.forEach( entry => roleList.push( Object.values(entry)[1] ))
+            rows.forEach( entry => roles.push( { id: Object.values(entry)[0], title: Object.values(entry)[1] } ) )
+                // collect roles for selection in the inquirer prompts
+                    return inquirer.prompt( [
+                        {
+                            type: 'list',
+                            name: 'role',
+                            message: "Select role to delete",
+                            choices: roleList,
+                            validate: input => {
+                                if( input.length === 1 ) { // check for length of 1 to validate single selection
+                                    return true
+                                } else {
+                                    console.log( 'Select a role!' )
+                                    return false
+                                }
+                            }
+                        }
+                    ] )
+                })
+                .then( data => {
+                        // collect department match
+                    const roleId = roles.filter( x => x.title === data.role)
+                        // query string
+                    db.promise().query(`DELETE FROM roles WHERE id = ?;`, [ roleId[0].id ])
+                    .then( ([rows,fields]) => {
+                            // display in table
+                        console.log( `${rows.affectedRows} role deleted` )
+                            // return to menu
+                        initial();
+                    })
+            .catch( err => {
+                console.log( err );
+            } );
+        })
+}
+
+    // delete an employee
+function deleteEmployee() {
+        // create empty array
+    const employees = []
+        // collect employeed list for selecting manager
+    db.promise().query(`SELECT concat(first_name,' ',last_name) AS name,id FROM employees;;`)
+        .then( ([rows,fields]) => {
+                // create empty array
+            const employeeList = []    
+                // push choices into department list
+            rows.forEach( entry => employeeList.push( Object.values(entry)[0] ))
+            rows.forEach( entry => employees.push( { id: Object.values(entry)[1], name: Object.values(entry)[0] } ) )
+                // collect roles for selection in the inquirer prompts
+                    return inquirer.prompt( [
+                        {
+                            type: 'list',
+                            name: 'employee',
+                            message: "Select employee to delete",
+                            choices: employeeList,
+                            validate: input => {
+                                if( input.length === 1 ) { // check for length of 1 to validate single selection
+                                    return true
+                                } else {
+                                    console.log( 'Select an employee!' )
+                                    return false
+                                }
+                            }
+                        }
+                    ] )
+                })
+                .then( data => {
+                    // collect department match
+                    const employeeId = employees.filter( x => x.name === data.employee)
+                        // query string
+                    db.promise().query(`DELETE FROM employees WHERE id = ?;`, [ employeeId[0].id ])
+                    .then( ([rows,fields]) => {
+                            // display in table
+                        console.log( `${rows.affectedRows} employee deleted` )
+                            // return to menu
+                        initial();
+                    })
+            .catch( err => {
+                console.log( err );
+            } );
+        })
+}
 
 module.exports = initial;
 
