@@ -11,7 +11,7 @@ function initial() {
         {
             type: 'list',
             name: "action",
-            message: "When would you like to do?",
+            message: "What would you like to do?",
             choices: [
                 "View all departments",
                 "View all roles",
@@ -19,7 +19,9 @@ function initial() {
                 "Add a department",
                 "Add a role",
                 "Add an employee",
-                "Update an employee role"
+                "Update an employee role",
+                "Update an employee manager",
+                "View employees by manager"
             ]
         }
     ]).then( data => {
@@ -43,8 +45,14 @@ function initial() {
         case "Add an employee":
             addEmployee();
             break;
-        case "Update and employee role":
+        case "Update an employee role":
             updateEmployeeRole();
+            break;
+        case "Update an employee manager":
+            updateEmployeeManager();
+            break;
+        case "View employees by manager":
+            viewEmployeesByManager();
             break;
         }
     })
@@ -342,6 +350,160 @@ ${rows.affectedRows} role added
                             console.log( err );
                         } );
         })
+};
+
+    // update employee role
+function updateEmployeeRole() {
+        // create empty array to store roles
+    const roles = []
+        // create empty array
+    const employees = []
+        // collect employeed list for selecting manager
+    db.promise().query(`SELECT concat(first_name,' ',last_name) AS name,id FROM employees;`)
+        .then( ([rows,fields]) => {
+                // create empty array
+            const employeeList = []
+                // push choices into array
+            rows.forEach( entry => employeeList.push( Object.values(entry)[0] ))
+                // populate list for manager selection
+            rows.forEach( entry => employees.push( {id: Object.values(entry)[1], name: Object.values(entry)[0] } ) )
+                // collect roles for selection in the inquirer prompts
+            db.promise().query(`SELECT title,id FROM roles;`)
+                .then( ([rows,fields]) => {
+                        // create empty array
+                    const roleList = []   
+                        // push choices into array
+                    rows.forEach( entry => roleList.push( Object.values(entry)[0] ))
+                        // push results into array to search for ID after selection
+                    rows.forEach( entry => roles.push( {id: Object.values(entry)[1], title: Object.values(entry)[0] } ) )
+                        // return to menu
+                        return inquirer.prompt( [
+                            {
+                                type: 'list',
+                                name: 'employee',
+                                message: "Which employee role do you want to update?",
+                                choices: employeeList,
+                                validate: input => {
+                                    if( input.length === 1 ) { // check for length of 1 to validate single selection
+                                        return true
+                                    } else {
+                                        console.log( 'Select an employee!' )
+                                        return false
+                                    }
+                                }
+                            },
+                            {
+                                type: 'list',
+                                name: 'title',
+                                message: "Select a new role",
+                                choices: roleList,
+                                validate: input => {
+                                    if( input.length === 1 ) { // check for length of 1 to validate single selection
+                                        return true
+                                    } else {
+                                        console.log( 'Select a role!' )
+                                        return false
+                                    }
+                                }
+                            }
+                        ] )
+                    })
+                    .then( data => {
+                            // collect role match
+                        const roleID = roles.filter( x => x.title === data.title)
+                            // collect employee match
+                        const employeeId = employees.filter( x => x.name === data.employee)
+                        db.promise().query(`UPDATE employees SET role_id = ? WHERE id = ?`, [ roleID[0].id, employeeId[0].id ])
+                            .then( ([rows,fields]) => {
+                                    // display confirmation
+                                console.log( `------------------
+${rows.affectedRows} role added
+------------------` )
+                                    // return to menu
+                                initial();
+                            })
+                            .catch( err => {
+                                console.log( err );
+                            } );
+                    } )
+                    .catch( err => {
+                        console.log( err );
+                    } );
+        })
+};
+
+    // update employee role
+function updateEmployeeManager() {
+    // create empty array
+const employees = [{id: null, name: 'None'}]
+    // collect employeed list for selecting manager
+db.promise().query(`SELECT concat(first_name,' ',last_name) AS name,id FROM employees;`)
+    .then( ([rows,fields]) => {
+            // create empty array
+        const employeeList = []
+            // create empty array
+        const managerList = [ 'None' ]    
+            // push choices into Employee array
+        rows.forEach( entry => employeeList.push( Object.values(entry)[0] ))
+            // push choices into Manager list
+        rows.forEach( entry => managerList.push( Object.values(entry)[0] ))
+            // populate list for manager selection
+        rows.forEach( entry => employees.push( {id: Object.values(entry)[1], name: Object.values(entry)[0] } ) )
+            // collect roles for selection in the inquirer prompts
+                    return inquirer.prompt( [
+                        {
+                            type: 'list',
+                            name: 'employee',
+                            message: "Which employee role do you want to update?",
+                            choices: employeeList,
+                            validate: input => {
+                                if( input.length === 1 ) { // check for length of 1 to validate single selection
+                                    return true
+                                } else {
+                                    console.log( 'Select an employee!' )
+                                    return false
+                                }
+                            }
+                        },
+                        {
+                            type: 'list',
+                            name: 'manager',
+                            message: "Select a new manager",
+                            choices: managerList,
+                            validate: input => {
+                                if( input.length === 1 ) { // check for length of 1 to validate single selection
+                                    return true
+                                } else {
+                                    console.log( 'Select a new manager!' )
+                                    return false
+                                }
+                            }
+                        }
+                    ] )
+                })
+                .then( data => {
+                        // collect employee match
+                    const employeeId = employees.filter( x => x.name === data.employee)
+                        // collect employee match
+                    const managerId = employees.filter( x => x.name === data.manager)
+                    console.log( data, managerId[0].id, employeeId[0].id)
+                    db.promise().query(`UPDATE employees SET manager_id = ? WHERE id = ?`, [ managerId[0].id, employeeId[0].id ])
+                        .then( ([rows,fields]) => {
+                                // display confirmation
+                            console.log( `------------------
+${rows.affectedRows} role added
+------------------` )
+                                // return to menu
+                            initial();
+                        })
+                        .catch( err => {
+                            console.log( err );
+                        } );
+                } )
+                .catch( err => {
+                    console.log( err );
+                } );
+
 };
 
 module.exports = initial;
