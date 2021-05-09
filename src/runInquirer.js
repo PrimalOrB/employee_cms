@@ -21,7 +21,8 @@ function initial() {
                 "Add an employee",
                 "Update an employee role",
                 "Update an employee manager",
-                "View employees by manager"
+                "View employees by manager",
+                "View employees by department"
             ]
         }
     ]).then( data => {
@@ -53,6 +54,9 @@ function initial() {
             break;
         case "View employees by manager":
             viewEmployeesByManager();
+            break;
+        case "View employees by department":
+            viewEmployeesByDepartment();
             break;
         }
     })
@@ -434,22 +438,22 @@ ${rows.affectedRows} role added
 
     // update employee role
 function updateEmployeeManager() {
-    // create empty array
-const employees = [{id: null, name: 'None'}]
-    // collect employeed list for selecting manager
-db.promise().query(`SELECT concat(first_name,' ',last_name) AS name,id FROM employees;`)
-    .then( ([rows,fields]) => {
-            // create empty array
-        const employeeList = []
-            // create empty array
-        const managerList = [ 'None' ]    
-            // push choices into Employee array
-        rows.forEach( entry => employeeList.push( Object.values(entry)[0] ))
-            // push choices into Manager list
-        rows.forEach( entry => managerList.push( Object.values(entry)[0] ))
-            // populate list for manager selection
-        rows.forEach( entry => employees.push( {id: Object.values(entry)[1], name: Object.values(entry)[0] } ) )
-            // collect roles for selection in the inquirer prompts
+        // create empty array
+    const employees = [{id: null, name: 'None'}]
+        // collect employeed list for selecting manager
+    db.promise().query(`SELECT concat(first_name,' ',last_name) AS name,id FROM employees;`)
+        .then( ([rows,fields]) => {
+                // create empty array
+            const employeeList = []
+                // create empty array
+            const managerList = [ 'None' ]    
+                // push choices into Employee array
+            rows.forEach( entry => employeeList.push( Object.values(entry)[0] ))
+                // push choices into Manager list
+            rows.forEach( entry => managerList.push( Object.values(entry)[0] ))
+                // populate list for manager selection
+            rows.forEach( entry => employees.push( {id: Object.values(entry)[1], name: Object.values(entry)[0] } ) )
+                // collect roles for selection in the inquirer prompts
                     return inquirer.prompt( [
                         {
                             type: 'list',
@@ -504,6 +508,134 @@ ${rows.affectedRows} role added
                     console.log( err );
                 } );
 
+};
+
+    // view employees by Manager
+function viewEmployeesByManager() {
+      // create empty array
+      const employees = [{id: null, name: 'None'}]
+      // collect employeed list for selecting manager
+  db.promise().query(`SELECT concat( managers.first_name, ' ', managers.last_name ) AS manager, managers.id
+                        FROM employees
+                        LEFT JOIN employees AS managers
+                        ON employees.manager_id = managers.id
+                        WHERE employees.manager_id IS NOT NULL
+                        GROUP BY manager
+                        ORDER BY manager;`)
+      .then( ([rows,fields]) => {
+              // create empty array
+          const managerList = [ 'None' ]    
+              // push choices into Manager list
+          rows.forEach( entry => managerList.push( Object.values(entry)[0] ))
+              // populate list for manager selection
+          rows.forEach( entry => employees.push( {id: Object.values(entry)[1], name: Object.values(entry)[0] } ) )
+              // collect roles for selection in the inquirer prompts
+                  return inquirer.prompt( [
+                      {
+                          type: 'list',
+                          name: 'manager',
+                          message: "Select manager to view",
+                          choices: managerList,
+                          validate: input => {
+                              if( input.length === 1 ) { // check for length of 1 to validate single selection
+                                  return true
+                              } else {
+                                  console.log( 'Select a manager!' )
+                                  return false
+                              }
+                          }
+                      }
+                  ] )
+              })
+              .then( data => {
+                    // collect manager match
+                  const managerId = employees.filter( x => x.name === data.manager)
+                         // query string
+                    db.promise().query(`SELECT employees.id, 
+                                        concat(employees.first_name,' ',employees.last_name) AS name, 
+                                        roles.title AS job_title, 
+                                        departments.name AS department, 
+                                        CONCAT('$',FORMAT(roles.salary, 'c')) AS salary,
+                                        concat( managers.first_name, ' ', managers.last_name ) AS manager
+                                    FROM employees
+                                    LEFT JOIN employees AS managers
+                                    ON employees.manager_id = managers.id
+                                    LEFT JOIN roles
+                                    ON employees.role_id = roles.id
+                                    LEFT JOIN departments
+                                    ON roles.department_id = departments.id
+                                    WHERE employees.manager_id = ?;`, [ managerId[0].id ])
+                    .then( ([rows,fields]) => {
+                            // display in table
+                        console.table( rows )
+                            // return to menu
+                        initial();
+                    })
+            .catch( err => {
+                console.log( err );
+            } );
+    })
+};
+
+    // view all employees
+function viewEmployeesByDepartment() {
+     // create empty array
+     const departments = []
+     // collect employeed list for selecting manager
+ db.promise().query(`SELECT * FROM departments;`)
+     .then( ([rows,fields]) => {
+             // create empty array
+         const departmentList = []    
+             // push choices into department list
+         rows.forEach( entry => departmentList.push( Object.values(entry)[1] ))
+         rows.forEach( entry => departments.push( { id: Object.values(entry)[0], name: Object.values(entry)[1] } ) )
+             // collect roles for selection in the inquirer prompts
+                 return inquirer.prompt( [
+                     {
+                         type: 'list',
+                         name: 'department',
+                         message: "Select department to view",
+                         choices: departmentList,
+                         validate: input => {
+                             if( input.length === 1 ) { // check for length of 1 to validate single selection
+                                 return true
+                             } else {
+                                 console.log( 'Select a department!' )
+                                 return false
+                             }
+                         }
+                     }
+                 ] )
+             })
+             .then( data => {
+                    // collect department match
+                const departmentId = departments.filter( x => x.name === data.department)
+                    // query string
+                db.promise().query(`SELECT employees.id, 
+                                        concat(employees.first_name,' ',employees.last_name) AS name, 
+                                        roles.title AS job_title, 
+                                        departments.name AS department, 
+                                        CONCAT('$',FORMAT(roles.salary, 'c')) AS salary,
+                                        concat( managers.first_name, ' ', managers.last_name ) AS manager
+                                    FROM employees
+                                    LEFT JOIN employees AS managers
+                                    ON employees.manager_id = managers.id
+                                    LEFT JOIN roles
+                                    ON employees.role_id = roles.id
+                                    LEFT JOIN departments
+                                    ON roles.department_id = departments.id
+                                    WHERE departments.id = ?;`, [ departmentId[0].id ])
+                   .then( ([rows,fields]) => {
+                       console.log( rows )
+                           // display in table
+                       console.table( rows )
+                           // return to menu
+                       initial();
+                   })
+           .catch( err => {
+               console.log( err );
+           } );
+   })
 };
 
 module.exports = initial;
