@@ -22,44 +22,48 @@ function initial() {
                 "Update an employee role",
                 "Update an employee manager",
                 "View employees by manager",
-                "View employees by department"
+                "View employees by department",
+                "View departmental salary budget"
             ]
         }
-    ]).then( data => {
+    ] ).then( data => {
             // switch statement casing the choices from above
-        switch ( data.action ){
-        case "View all departments":
-            viewDepartments();
-            break;
-        case "View all roles":
-            viewRoles();
-            break;
-        case "View all employees":
-            viewEmployees();
-            break;
-        case "Add a department":
-            addDepartment();
-            break;
-        case "Add a role":
-            addRole();
-            break;
-        case "Add an employee":
-            addEmployee();
-            break;
-        case "Update an employee role":
-            updateEmployeeRole();
-            break;
-        case "Update an employee manager":
-            updateEmployeeManager();
-            break;
-        case "View employees by manager":
-            viewEmployeesByManager();
-            break;
-        case "View employees by department":
-            viewEmployeesByDepartment();
-            break;
-        }
-    })
+        switch ( data.action ) {
+            case "View all departments":
+                viewDepartments();
+                break;
+            case "View all roles":
+                viewRoles();
+                break;
+            case "View all employees":
+                viewEmployees();
+                break;
+            case "Add a department":
+                addDepartment();
+                break;
+            case "Add a role":
+                addRole();
+                break;
+            case "Add an employee":
+                addEmployee();
+                break;
+            case "Update an employee role":
+                updateEmployeeRole();
+                break;
+            case "Update an employee manager":
+                updateEmployeeManager();
+                break;
+            case "View employees by manager":
+                viewEmployeesByManager();
+                break;
+            case "View employees by department":
+                viewEmployeesByDepartment();
+                break;
+            case "View departmental salary budget":
+                viewDepartmentBudget();
+                break;
+            }
+    } )
 };
 
     // view all departments
@@ -626,7 +630,6 @@ function viewEmployeesByDepartment() {
                                     ON roles.department_id = departments.id
                                     WHERE departments.id = ?;`, [ departmentId[0].id ])
                    .then( ([rows,fields]) => {
-                       console.log( rows )
                            // display in table
                        console.table( rows )
                            // return to menu
@@ -636,6 +639,31 @@ function viewEmployeesByDepartment() {
                console.log( err );
            } );
    })
+};
+
+    // view department budget
+function viewDepartmentBudget() {
+    // query string
+db.promise().query(`SELECT departments.name AS department, 
+                        CONCAT('$',FORMAT(SUM(roles.salary), 'c')) AS salary
+                        FROM employees
+                        LEFT JOIN employees AS managers
+                        ON employees.manager_id = managers.id
+                        LEFT JOIN roles
+                        ON employees.role_id = roles.id
+                        LEFT JOIN departments
+                        ON roles.department_id = departments.id
+                        GROUP BY departments.id
+                        ORDER BY departments.id;`)
+    .then( ([rows,fields]) => {
+            // display in table
+        console.table( rows )
+            // return to menu
+        initial();
+    })
+    .catch( err => {
+        console.log( err );
+    } );
 };
 
 module.exports = initial;
