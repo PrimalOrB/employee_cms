@@ -527,7 +527,7 @@ function updateEmployeeManager() {
             // collect employee match
         const employeeId = filterID( employees, data.employee );
             // collect employee match
-        const managerId = filterID( employees, manager.employee );
+        const managerId = filterID( employees, data.manager );
 
             // SQL query - update employees table manager designation
         db.promise().query(`UPDATE employees SET manager_id = ? WHERE id = ?`, [ managerId, employeeId ] )
@@ -655,7 +655,7 @@ function viewEmployeesByDepartment() {
     } )
     .then( data => {
             // collect department match
-        const departmentId = filterID( employees, data.department );
+        const departmentId = filterID( departments, data.department );
         
             // SQL query - get employees by department
         db.promise().query(`SELECT employees.id, 

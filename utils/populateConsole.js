@@ -4,4 +4,4 @@ module.exports = ( rows, type) => {
 `------------------
 ${ rows.affectedRows } ${ type }
 ------------------`)
-}
+};
