@@ -24,7 +24,6 @@
   "homepage": "https://github.com/PrimalOrB/employee_cms#readme",
   "dependencies": {
     "console.table": "^0.10.0",
-    "express": "^4.17.1",
     "inquirer": "^8.0.0",
     "mysql2": "^2.2.5"
   }
